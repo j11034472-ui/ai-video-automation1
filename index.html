@@ -7,70 +7,16 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="shell">
-      <header class="topbar">
-        <div>
-          <span class="eyebrow">AI VIDEO AUTOMATION</span>
-          <h1>ভালো ভিডিও, কম সময়ে</h1>
-          <p class="muted">Script, matching media, voice এবং schedule—এক জায়গায়।</p>
-        </div>
-        <span class="status"><i></i> MVP mode</span>
-      </header>
-
-      <section class="grid">
-        <section class="card setup-card">
-          <div class="card-head"><h2>সার্ভার সেটআপ</h2><span class="step">00</span></div>
-          <p class="muted">Secret key browser বা GitHub code-এ রাখা হবে না। Hosting-এর Environment Variables-এ রাখতে হবে।</p>
-          <div class="setup-status" id="setup-status">Config check হচ্ছে…</div>
-          <code>GEMINI_API_KEY · PIXABAY_API_KEY · YOUTUBE_CLIENT_ID</code>
-          <div class="key-form">
-            <input id="gemini-key" type="password" placeholder="Gemini API key" autocomplete="off" />
-            <input id="pixabay-key" type="password" placeholder="Pixabay API key" autocomplete="off" />
-            <input id="youtube-client-id" type="password" placeholder="YouTube Client ID (পরে লাগবে)" autocomplete="off" />
-            <input id="youtube-client-secret" type="password" placeholder="YouTube Client Secret (পরে লাগবে)" autocomplete="off" />
-            <button class="secondary" id="save-keys" type="button">Settings save করুন</button>
-            <small id="save-note" class="hint">Key fields ফাঁকা রাখলে আগের value বদলাবে না।</small>
-          </div>
-        </section>
-        <form class="card" id="video-form">
-          <div class="card-head"><h2>ভিডিও তৈরি করুন</h2><span class="step">01</span></div>
-          <label>ভিডিওর বিষয়
-            <textarea id="topic" required placeholder="যেমন: মৌমাছি কীভাবে মধু তৈরি করে?"></textarea>
-          </label>
-          <div class="two-col">
-            <label>ভাষা<select id="language"><option>বাংলা</option><option>English</option><option>Hindi</option><option>Urdu</option></select></label>
-            <label>দৈর্ঘ্য<select id="duration"><option value="20">20 sec</option><option value="60">1 min</option><option value="180">3 min</option></select></label>
-          </div>
-          <div class="two-col">
-            <label>Voice<select id="voice"><option>Bangla — Clear</option><option>Bangla — Warm</option><option>English — Natural</option></select></label>
-            <label>Format<select id="format"><option>9:16 Shorts</option><option>16:9 YouTube</option><option>1:1 Square</option></select></label>
-          </div>
-          <fieldset><legend>Media source</legend>
-            <label class="check"><input type="checkbox" checked /> Licensed photos</label>
-            <label class="check"><input type="checkbox" checked /> Short video clips</label>
-            <label class="check"><input type="checkbox" checked /> Scene matching filter</label>
-          </fieldset>
-          <button class="primary" type="submit">ভিডিও তৈরি শুরু করুন</button>
-          <p class="hint" id="mode-note">Demo mode: server key যোগ করলে AI script ও licensed media search চালু হবে।</p>
-        </form>
-
-        <section class="card preview-card">
-          <div class="card-head"><h2>Preview</h2><span class="step">02</span></div>
-          <div class="preview" id="preview"><div class="play">▶</div><p>আপনার ভিডিও এখানে দেখা যাবে</p></div>
-          <div class="scene-list" id="scene-list"><div class="empty">Topic দিলে scene breakdown দেখা যাবে।</div></div>
-        </section>
-
-        <section class="card schedule-card">
-          <div class="card-head"><h2>Automation</h2><span class="step">03</span></div>
-          <div class="two-col"><label>প্রতি দিনে <input id="daily" type="number" min="1" max="20" value="2" /></label><label>সময় <input id="time" type="time" value="18:00" /></label></div>
-          <label class="check switch"><input type="checkbox" id="auto" /> AI নিজে topic বাছবে</label>
-          <label class="check switch"><input type="checkbox" id="youtube" /> YouTube upload queue</label>
-          <button class="secondary" id="save-schedule" type="button">Schedule save করুন</button>
-          <p class="hint" id="schedule-note">এখনো কোনো schedule নেই।</p>
-        </section>
-      </section>
-      <footer>Prototype only · Credentials কখনো frontend code-এ রাখবেন না।</footer>
-    </main>
+    <div class="app-shell">
+      <aside class="sidebar"><a class="brand" href="#overview"><span class="brand-mark">✦</span><span>Video<span>Flow</span></span></a><p class="nav-label">WORKSPACE</p><nav class="nav-list"><button class="nav-item active" data-section="overview"><span>⌂</span>Overview</button><button class="nav-item" data-section="create"><span>＋</span>Create video</button><button class="nav-item" data-section="library"><span>▣</span>Library</button><button class="nav-item" data-section="automation"><span>◷</span>Automation</button></nav><p class="nav-label">SYSTEM</p><nav class="nav-list"><button class="nav-item" data-section="settings"><span>⚙</span>Settings</button><a class="nav-item external" href="https://github.com/j11034472-ui/ai-video-automation1" target="_blank" rel="noreferrer"><span>↗</span>GitHub</a></nav><div class="sidebar-bottom"><div class="plan-dot"></div><div><b>Free workspace</b><small>Connect services to start</small></div></div></aside>
+      <main class="main-content"><header class="topbar"><div><p class="kicker">AI VIDEO STUDIO</p><h1 id="page-title">Overview</h1></div><div class="top-actions"><span class="live-pill"><i></i> Local workspace</span><button class="avatar">A</button></div></header>
+        <section class="page-section active" id="section-overview"><div class="hero-card"><div><span class="hero-chip">CREATE WITH AI</span><h2>আপনার আইডিয়া থেকে<br><em>দারুণ ভিডিও</em></h2><p>Script, matching visuals, voice এবং caption—সব এক workflow-এ।</p><button class="primary" data-section="create">নতুন ভিডিও তৈরি করুন <span>→</span></button></div><div class="hero-art"><div class="orb orb-one"></div><div class="orb orb-two"></div><div class="floating-card card-a">✦ <span>AI script</span></div><div class="floating-card card-b">◉ <span>Voice ready</span></div><div class="phone-preview"><div class="phone-top"></div><div class="phone-image"></div><div class="phone-lines"><i></i><i></i><i></i></div></div></div></div><div class="section-heading"><div><h2>Workspace overview</h2><p>আপনার content pipeline-এর বর্তমান অবস্থা</p></div><button class="ghost" data-section="settings">Manage setup ↗</button></div><div class="stats-grid"><div class="stat-card"><span class="stat-icon purple">✦</span><small>Videos created</small><strong id="stat-videos">0</strong><span class="stat-note">এই workspace-এ</span></div><div class="stat-card"><span class="stat-icon green">✓</span><small>Ready to publish</small><strong id="stat-ready">0</strong><span class="stat-note">Preview ও download</span></div><div class="stat-card"><span class="stat-icon orange">◷</span><small>Scheduled</small><strong id="stat-scheduled">0</strong><span class="stat-note">Automation queue</span></div><div class="stat-card"><span class="stat-icon blue">◌</span><small>Integrations</small><strong id="stat-integrations">0/3</strong><span class="stat-note">Gemini · Media · YouTube</span></div></div><div class="two-panels"><div class="panel"><div class="panel-head"><div><h3>Quick start</h3><p>প্রথম ভিডিও বানাতে ৩টি ধাপ</p></div><span class="panel-count">01—03</span></div><div class="quick-step"><b>01</b><span><strong>Connect your AI</strong><small>Settings-এ Gemini key যোগ করুন</small></span><button data-section="settings">→</button></div><div class="quick-step"><b>02</b><span><strong>Choose a topic</strong><small>আপনার idea দিয়ে শুরু করুন</small></span><button data-section="create">→</button></div><div class="quick-step"><b>03</b><span><strong>Render & publish</strong><small>Preview করে schedule করুন</small></span><button data-section="automation">→</button></div></div><div class="panel recent-panel"><div class="panel-head"><div><h3>Recent videos</h3><p>আপনার latest renders</p></div><button class="text-button" data-section="library">View all</button></div><div id="recent-videos" class="empty-state"><span>◫</span><p>এখনো কোনো video নেই</p><small>Create video থেকে প্রথমটি বানান</small></div></div></div></section>
+        <section class="page-section" id="section-create"><div class="section-heading"><div><h2>Create a video</h2><p>একটি topic দিন, বাকিটা AI সাজিয়ে দেবে</p></div><span class="soft-badge">MVP render engine</span></div><div class="create-layout"><form class="panel create-form" id="video-form"><div class="form-title"><span class="step-number">01</span><div><h3>আপনার ভিডিওর বিষয়</h3><p>একটি clear idea লিখুন</p></div></div><label>Topic বা prompt<textarea id="topic" required placeholder="যেমন: মৌমাছি কীভাবে মধু তৈরি করে?"></textarea></label><div class="field-grid"><label>ভাষা<select id="language"><option>বাংলা</option><option>English</option><option>Hindi</option><option>Urdu</option></select></label><label>দৈর্ঘ্য<select id="duration"><option value="20">20 seconds</option><option value="60">1 minute</option><option value="180">3 minutes</option></select></label></div><div class="form-title second"><span class="step-number">02</span><div><h3>Look & voice</h3><p>আপনার video-এর feel বাছুন</p></div></div><div class="field-grid"><label>Voice<select id="voice"><option>Bangla — Clear</option><option>Bangla — Warm</option><option>English — Natural</option></select></label><label>Format<select id="format"><option>9:16 Shorts</option><option>16:9 YouTube</option><option>1:1 Square</option></select></label></div><div class="media-options"><label class="option-row"><input type="checkbox" checked><span><b>Licensed visuals</b><small>Scene অনুযায়ী photo ও clip</small></span><i>✓</i></label><label class="option-row"><input type="checkbox" checked><span><b>Scene matching</b><small>Voice যা বলবে, visual সেটাই দেখাবে</small></span><i>✓</i></label></div><button class="primary wide" type="submit">ভিডিও তৈরি শুরু করুন <span>→</span></button><p class="form-note" id="mode-note">Demo mode: server key যোগ করলে AI script ও licensed media search চালু হবে।</p></form><div class="panel preview-panel"><div class="panel-head"><div><h3>Live preview</h3><p>Render হলে এখানে দেখা যাবে</p></div><span class="preview-dot"><i></i> Ready</span></div><div class="preview" id="preview"><div class="preview-placeholder"><span>▶</span><p>আপনার video preview এখানে</p><small>Topic দিলে scene plan দেখা যাবে</small></div></div><div class="scene-list" id="scene-list"><div class="empty">এখনো কোনো scene তৈরি হয়নি</div></div></div></div></section>
+        <section class="page-section" id="section-library"><div class="section-heading"><div><h2>Video library</h2><p>আপনার তৈরি করা video, render ও downloads</p></div><button class="primary small" data-section="create">＋ New video</button></div><div class="filter-bar"><button class="filter active">All videos</button><button class="filter">Ready</button><button class="filter">Failed</button><button class="filter">Scheduled</button></div><div class="library-grid" id="library-grid"><div class="empty-library"><span>▣</span><h3>Your library is empty</h3><p>প্রথম video তৈরি করলে এখানে history দেখা যাবে।</p><button class="ghost" data-section="create">Create your first video →</button></div></div></section>
+        <section class="page-section" id="section-automation"><div class="section-heading"><div><h2>Automation</h2><p>Video কখন, কতটি এবং কোন topic-এ হবে সেট করুন</p></div><span class="soft-badge">Scheduler</span></div><div class="automation-layout"><div class="panel automation-main"><div class="automation-icon">◷</div><h3>আপনার content calendar</h3><p>AI নিজে topic বাছবে, video তৈরি করবে এবং queue অনুযায়ী প্রস্তুত রাখবে। YouTube OAuth যুক্ত হলে auto-upload হবে।</p><div class="automation-fields"><label>প্রতিদিন কতটি<input id="daily" type="number" min="1" max="20" value="2"></label><label>প্রথম upload time<input id="time" type="time" value="18:00"></label></div><label class="toggle-row"><input type="checkbox" id="auto"><span><b>AI topic selection</b><small>AI নিজে নতুন topic বেছে নেবে</small></span><i></i></label><label class="toggle-row"><input type="checkbox" id="youtube"><span><b>YouTube upload queue</b><small>OAuth connect হলে schedule করা যাবে</small></span><i></i></label><button class="primary" id="save-schedule" type="button">Schedule save করুন <span>→</span></button><p class="form-note" id="schedule-note">এখনো কোনো schedule নেই।</p></div><div class="panel automation-side"><h3>How it works</h3><div class="timeline"><div><b>01</b><span><strong>Plan</strong><small>AI topic ও script বানায়</small></span></div><div><b>02</b><span><strong>Create</strong><small>Voice, visual ও caption যোগ হয়</small></span></div><div><b>03</b><span><strong>Publish</strong><small>আপনার queue অনুযায়ী upload</small></span></div></div></div></div></section>
+        <section class="page-section" id="section-settings"><div class="section-heading"><div><h2>Settings</h2><p>আপনার AI, media এবং publishing integrations</p></div><span class="soft-badge">Secure setup</span></div><div class="settings-layout"><div class="panel setup-panel"><div class="form-title"><span class="step-number">01</span><div><h3>AI & media keys</h3><p>Key server-এ থাকবে, UI-তে কখনো দেখাবে না</p></div></div><div class="setup-status" id="setup-status">Config check হচ্ছে…</div><label>Gemini API key<input id="gemini-key" type="password" placeholder="Paste Gemini key" autocomplete="off"></label><label>Pixabay API key<input id="pixabay-key" type="password" placeholder="Paste Pixabay key" autocomplete="off"></label><button class="secondary" id="save-keys" type="button">Settings save করুন</button><small id="save-note" class="form-note">Key field ফাঁকা রাখলে আগের value বদলাবে না।</small></div><div class="panel setup-panel"><div class="form-title"><span class="step-number">02</span><div><h3>YouTube publishing</h3><p>OAuth permission-এর পরে upload চালু হবে</p></div></div><div class="connection-card"><span class="connection-icon">▶</span><span><b>YouTube channel</b><small>Not connected</small></span><button class="ghost">Connect later</button></div><p class="form-note">YouTube password app-এ দিতে হবে না। Google OAuth permission ব্যবহার করা হবে।</p></div></div></section>
+      </main>
+    </div>
     <script src="app.js"></script>
   </body>
 </html>

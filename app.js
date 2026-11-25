@@ -3,6 +3,28 @@ const topic = document.querySelector('#topic');
 const scenes = document.querySelector('#scene-list');
 const preview = document.querySelector('#preview');
 
+const sectionTitles = { overview: 'Overview', create: 'Create video', library: 'Library', automation: 'Automation', settings: 'Settings' };
+document.querySelectorAll('[data-section]').forEach((button) => button.addEventListener('click', () => {
+  const target = button.dataset.section;
+  document.querySelectorAll('.page-section').forEach((section) => section.classList.toggle('active', section.id === `section-${target}`));
+  document.querySelectorAll('.nav-item[data-section]').forEach((item) => item.classList.toggle('active', item.dataset.section === target));
+  document.querySelector('#page-title').textContent = sectionTitles[target] || 'Overview';
+  window.location.hash = target;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}));
+
+const initialSection = window.location.hash.slice(1);
+if (sectionTitles[initialSection]) document.querySelector(`[data-section="${initialSection}"]`)?.click();
+
+fetch('/api/jobs').then((response) => response.json()).then((jobs) => {
+  document.querySelector('#stat-videos').textContent = jobs.length;
+  document.querySelector('#stat-ready').textContent = jobs.filter((job) => job.status === 'ready').length;
+  const recent = document.querySelector('#recent-videos');
+  if (jobs.length) recent.innerHTML = jobs.slice(0, 3).map((job) => `<div class="quick-step"><b>${job.status === 'ready' ? '✓' : '!'}</b><span><strong>${job.status === 'ready' ? 'Video ready' : 'Render failed'}</strong><small>${job.duration || 0}s · ${new Date(job.createdAt).toLocaleString()}</small></span></div>`).join('');
+}).catch(() => {});
+
+fetch('/api/schedules').then((response) => response.json()).then((schedules) => { document.querySelector('#stat-scheduled').textContent = schedules.filter((schedule) => schedule.enabled).length; }).catch(() => {});
+
 fetch('/api/config').then((response) => response.json()).then((config) => {
   const ready = [config.gemini, config.media, config.youtube].filter(Boolean).length;
   document.querySelector('#setup-status').textContent = `${ready}/3 integrations configured · ${config.gemini ? 'Gemini ready' : 'Gemini key missing'} · ${config.media ? `${config.mediaProvider} ready` : 'Media key missing'} · ${config.youtube ? 'YouTube ready' : 'YouTube not connected'}`;
@@ -16,13 +38,13 @@ document.querySelector('#save-keys').addEventListener('click', async () => {
     const response = await fetch('/api/settings', { method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({
       GEMINI_API_KEY: document.querySelector('#gemini-key').value,
       PIXABAY_API_KEY: document.querySelector('#pixabay-key').value,
-      YOUTUBE_CLIENT_ID: document.querySelector('#youtube-client-id').value,
-      YOUTUBE_CLIENT_SECRET: document.querySelector('#youtube-client-secret').value
+      YOUTUBE_CLIENT_ID: '',
+      YOUTUBE_CLIENT_SECRET: ''
     }) });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Save failed');
     note.textContent = 'Settings saved. Key value এখানে দেখানো হবে না।';
-    ['#gemini-key','#pixabay-key','#youtube-client-id','#youtube-client-secret'].forEach((selector) => { document.querySelector(selector).value = ''; });
+    ['#gemini-key','#pixabay-key'].forEach((selector) => { document.querySelector(selector).value = ''; });
     window.location.reload();
   } catch (error) { note.textContent = error.message; }
   finally { button.disabled = false; }
