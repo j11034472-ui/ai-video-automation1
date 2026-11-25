@@ -23,6 +23,14 @@
           <p class="muted">Secret key browser বা GitHub code-এ রাখা হবে না। Hosting-এর Environment Variables-এ রাখতে হবে।</p>
           <div class="setup-status" id="setup-status">Config check হচ্ছে…</div>
           <code>GEMINI_API_KEY · PIXABAY_API_KEY · YOUTUBE_CLIENT_ID</code>
+          <div class="key-form">
+            <input id="gemini-key" type="password" placeholder="Gemini API key" autocomplete="off" />
+            <input id="pixabay-key" type="password" placeholder="Pixabay API key" autocomplete="off" />
+            <input id="youtube-client-id" type="password" placeholder="YouTube Client ID (পরে লাগবে)" autocomplete="off" />
+            <input id="youtube-client-secret" type="password" placeholder="YouTube Client Secret (পরে লাগবে)" autocomplete="off" />
+            <button class="secondary" id="save-keys" type="button">Settings save করুন</button>
+            <small id="save-note" class="hint">Key fields ফাঁকা রাখলে আগের value বদলাবে না।</small>
+          </div>
         </section>
         <form class="card" id="video-form">
           <div class="card-head"><h2>ভিডিও তৈরি করুন</h2><span class="step">01</span></div>

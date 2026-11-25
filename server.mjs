@@ -8,6 +8,7 @@ const root = fileURLToPath(new URL('.', import.meta.url));
 const port = Number(process.env.PORT || 3000);
 const renderDir = join(root, 'renders');
 const assetDir = join(renderDir, 'assets');
+const envFile = join(root, '.env');
 
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json' };
 
@@ -189,6 +190,15 @@ const server = http.createServer(async (request, response) => {
       youtube: Boolean(process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET),
       models: { plan: process.env.GEMINI_PLAN_MODEL || 'gemini-3.5-flash-lite', review: process.env.GEMINI_REVIEW_MODEL || 'gemini-3.1-pro-preview', tts: process.env.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts' }
     });
+    if (request.method === 'POST' && request.url === '/api/settings') {
+      const input = await body(request);
+      const allowed = ['GEMINI_API_KEY', 'PIXABAY_API_KEY', 'PEXELS_API_KEY', 'YOUTUBE_CLIENT_ID', 'YOUTUBE_CLIENT_SECRET'];
+      const values = Object.fromEntries(allowed.map((name) => [name, String(input[name] || '').trim() || process.env[name] || '']));
+      for (const name of allowed) if (values[name]) process.env[name] = values[name];
+      const lines = allowed.filter((name) => values[name]).map((name) => `${name}=${values[name]}`);
+      if (lines.length) await writeFile(envFile, `${lines.join('\n')}\n`, { mode: 0o600 });
+      return send(response, 200, { ok: true, configured: { gemini: Boolean(process.env.GEMINI_API_KEY), media: Boolean(process.env.PIXABAY_API_KEY || process.env.PEXELS_API_KEY), youtube: Boolean(process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET) } });
+    }
     if (request.method === 'POST' && request.url === '/api/plan') return send(response, 200, await makePlan(await body(request)));
     if (request.method === 'POST' && request.url === '/api/render') return send(response, 200, await renderPlan(await body(request)));
     if (request.method === 'POST' && request.url === '/api/tts') {

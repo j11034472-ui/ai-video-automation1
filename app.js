@@ -8,6 +8,26 @@ fetch('/api/config').then((response) => response.json()).then((config) => {
   document.querySelector('#setup-status').textContent = `${ready}/3 integrations configured · ${config.gemini ? 'Gemini ready' : 'Gemini key missing'} · ${config.media ? `${config.mediaProvider} ready` : 'Media key missing'} · ${config.youtube ? 'YouTube ready' : 'YouTube not connected'}`;
 }).catch(() => { document.querySelector('#setup-status').textContent = 'Server চালু নেই'; });
 
+document.querySelector('#save-keys').addEventListener('click', async () => {
+  const button = document.querySelector('#save-keys');
+  const note = document.querySelector('#save-note');
+  button.disabled = true;
+  try {
+    const response = await fetch('/api/settings', { method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({
+      GEMINI_API_KEY: document.querySelector('#gemini-key').value,
+      PIXABAY_API_KEY: document.querySelector('#pixabay-key').value,
+      YOUTUBE_CLIENT_ID: document.querySelector('#youtube-client-id').value,
+      YOUTUBE_CLIENT_SECRET: document.querySelector('#youtube-client-secret').value
+    }) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Save failed');
+    note.textContent = 'Settings saved. Key value এখানে দেখানো হবে না।';
+    ['#gemini-key','#pixabay-key','#youtube-client-id','#youtube-client-secret'].forEach((selector) => { document.querySelector(selector).value = ''; });
+    window.location.reload();
+  } catch (error) { note.textContent = error.message; }
+  finally { button.disabled = false; }
+});
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   const text = topic.value.trim();
