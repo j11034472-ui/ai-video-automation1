@@ -12,6 +12,10 @@ pnpm dev
 
 Then open `http://localhost:3000`.
 
+## Public deployment
+
+Use Render as a Docker Web Service. Connect this GitHub repository, keep the Docker runtime, and add the secret environment variables in the Render dashboard. GitHub Pages cannot run the backend, scheduler or FFmpeg worker.
+
 Optional `.env` values (never commit this file):
 
 ```bash
