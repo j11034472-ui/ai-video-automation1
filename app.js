@@ -3,6 +3,11 @@ const topic = document.querySelector('#topic');
 const scenes = document.querySelector('#scene-list');
 const preview = document.querySelector('#preview');
 
+fetch('/api/config').then((response) => response.json()).then((config) => {
+  const ready = [config.gemini, config.media, config.youtube].filter(Boolean).length;
+  document.querySelector('#setup-status').textContent = `${ready}/3 integrations configured · ${config.gemini ? 'Gemini ready' : 'Gemini key missing'} · ${config.media ? 'Media ready' : 'Media key missing'} · ${config.youtube ? 'YouTube ready' : 'YouTube not connected'}`;
+}).catch(() => { document.querySelector('#setup-status').textContent = 'Server চালু নেই'; });
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   const text = topic.value.trim();

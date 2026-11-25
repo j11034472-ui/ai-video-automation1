@@ -129,6 +129,11 @@ async function body(request) {
 const server = http.createServer(async (request, response) => {
   try {
     if (request.method === 'GET' && request.url === '/api/health') return send(response, 200, { ok: true, gemini: Boolean(process.env.GEMINI_API_KEY), media: Boolean(process.env.PEXELS_API_KEY) });
+    if (request.method === 'GET' && request.url === '/api/config') return send(response, 200, {
+      gemini: Boolean(process.env.GEMINI_API_KEY), media: Boolean(process.env.PEXELS_API_KEY),
+      youtube: Boolean(process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET),
+      models: { plan: process.env.GEMINI_PLAN_MODEL || 'gemini-3.5-flash-lite', review: process.env.GEMINI_REVIEW_MODEL || 'gemini-3.1-pro-preview', tts: process.env.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts' }
+    });
     if (request.method === 'POST' && request.url === '/api/plan') return send(response, 200, await makePlan(await body(request)));
     if (request.method === 'POST' && request.url === '/api/render') return send(response, 200, await renderPlan(await body(request)));
     if (request.method === 'POST' && request.url === '/api/tts') {
