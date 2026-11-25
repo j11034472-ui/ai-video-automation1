@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('.', import.meta.url));
 const port = Number(process.env.PORT || 3000);
 const renderDir = join(root, 'renders');
+const assetDir = join(renderDir, 'assets');
 
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json' };
 
@@ -95,13 +96,22 @@ function run(command, args) {
 
 async function renderPlan(plan) {
   await mkdir(renderDir, { recursive: true });
+  await mkdir(assetDir, { recursive: true });
   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const file = join(renderDir, `${id}.mp4`);
   const scenes = (plan.scenes || []).slice(0, 12);
   const seconds = Math.max(2, Math.min(30, Number(plan.duration || 20) / Math.max(1, scenes.length)));
   const colors = ['#102a43', '#243b53', '#334e68', '#486581', '#0b525b', '#144552', '#1b3a4b', '#212f45'];
-  const inputs = scenes.map((_, i) => ['-f', 'lavfi', '-i', `color=c=${colors[i % colors.length]}:s=720x1280:r=30:d=${seconds}`]).flat();
-  const filters = scenes.map((_, i) => `[${i}:v]drawtext=fontcolor=white:fontsize=42:x=(w-text_w)/2:y=(h-text_h)/2:text='SCENE ${i + 1}',format=yuv420p[v${i}]`).join(';');
+  const assets = await Promise.all(scenes.map((scene, i) => {
+    const match = (plan.media || []).find((item) => item.sceneIndex === i && item.type === 'photo' && item.preview);
+    return match ? downloadAsset(match.preview, `${id}-${i}-${match.id}`) : null;
+  }));
+  const inputs = scenes.map((_, i) => assets[i] ? ['-loop', '1', '-i', assets[i]] : ['-f', 'lavfi', '-i', `color=c=${colors[i % colors.length]}:s=720x1280:r=30:d=${seconds}`]).flat();
+  const filters = scenes.map((scene, i) => {
+    const text = `SCENE ${i + 1}`;
+    const source = assets[i] ? `[${i}:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1,trim=duration=${seconds},setpts=PTS-STARTPTS,` : `[${i}:v]`;
+    return `${source}drawtext=fontcolor=white:fontsize=42:x=(w-text_w)/2:y=(h-text_h)/2:text='${text}',format=yuv420p[v${i}]`;
+  }).join(';');
   const concat = scenes.map((_, i) => `[v${i}]`).join('') + `concat=n=${scenes.length}:v=1:a=0[outv]`;
   const silent = join(renderDir, `${id}-silent.mp4`);
   await run('ffmpeg', [...inputs, '-filter_complex', `${filters};${concat}`, '-map', '[outv]', '-movflags', '+faststart', '-y', silent]);
@@ -110,6 +120,19 @@ async function renderPlan(plan) {
   if (audioFile) await run('ffmpeg', ['-i', silent, '-i', audioFile, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-shortest', '-movflags', '+faststart', '-y', file]);
   else await run('ffmpeg', ['-i', silent, '-c', 'copy', '-movflags', '+faststart', '-y', file]);
   return { id, url: `/renders/${id}.mp4`, duration: Math.round(seconds * scenes.length), scenes: scenes.length };
+}
+
+async function downloadAsset(url, name) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const type = response.headers.get('content-type') || '';
+    if (!type.startsWith('image/')) return null;
+    const ext = type.includes('png') ? 'png' : 'jpg';
+    const file = join(assetDir, `${name}.${ext}`);
+    await writeFile(file, Buffer.from(await response.arrayBuffer()));
+    return file;
+  } catch { return null; }
 }
 
 async function generateTts(text, selectedVoice) {
