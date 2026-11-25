@@ -6,7 +6,7 @@ const preview = document.querySelector('#preview');
 fetch('/api/config').then((response) => response.json()).then((config) => {
   const ready = [config.gemini, config.media, config.youtube].filter(Boolean).length;
   document.querySelector('#setup-status').textContent = `${ready}/3 integrations configured · ${config.gemini ? 'Gemini ready' : 'Gemini key missing'} · ${config.media ? `${config.mediaProvider} ready` : 'Media key missing'} · ${config.youtube ? 'YouTube ready' : 'YouTube not connected'}`;
-}).catch(() => { document.querySelector('#setup-status').textContent = 'Server চালু নেই'; });
+}).catch(() => { document.querySelector('#setup-status').textContent = 'Static demo mode · backend connect করলে AI/API চালু হবে'; });
 
 document.querySelector('#save-keys').addEventListener('click', async () => {
   const button = document.querySelector('#save-keys');
@@ -72,7 +72,9 @@ form.addEventListener('submit', async (event) => {
       preview.innerHTML = `<video controls playsinline src="${result.url}"></video><p>${result.duration}s test render ready</p>`;
     }
   } catch (error) {
-    preview.innerHTML = '<div class="play">!</div><p>Server চালু করুন: pnpm dev</p>';
+    const localParts = [`Hook: ${text}`, `মূল বিষয় ব্যাখ্যা: ${text}`, 'উদাহরণ ও matching visual', 'শেষ কথা ও call to action'];
+    scenes.innerHTML = localParts.map((part, index) => `<div class="scene"><b>0${index + 1}</b><span>${part}</span></div>`).join('');
+    preview.innerHTML = '<div class="play">✓</div><p>Static demo plan ready · backend ছাড়া MP4 render হবে না</p>';
   } finally {
     button.disabled = false;
     button.textContent = 'ভিডিও তৈরি শুরু করুন';
