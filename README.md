@@ -18,10 +18,11 @@ GEMINI_PLAN_MODEL=gemini-3.5-flash-lite
 GEMINI_REVIEW_MODEL=gemini-3.1-pro-preview
 GEMINI_REVIEW=false
 GEMINI_TTS_MODEL=gemini-3.8-flash-tts
+PIXABAY_API_KEY=...
 PEXELS_API_KEY=...
 ```
 
-Model roles: Flash-Lite plans quickly and Pro reviews the result. Gemini 3.8 Flash TTS generates an optional WAV voice track, which FFmpeg can mux into the MP4. See the [official TTS guide](https://ai.google.dev/gemini-api/docs/speech-generation).
+Model roles: Flash-Lite plans quickly and Pro reviews the result. Gemini 3.8 Flash TTS generates an optional WAV voice track, which FFmpeg can mux into the MP4. Pixabay is the primary in-app media provider and Pexels is the fallback. See the [official TTS guide](https://ai.google.dev/gemini-api/docs/speech-generation).
 
 ## Planned modules
 

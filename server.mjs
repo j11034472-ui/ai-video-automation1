@@ -78,9 +78,31 @@ async function searchPexels(scenes) {
   return media;
 }
 
+async function searchPixabay(scenes) {
+  const key = process.env.PIXABAY_API_KEY;
+  if (!key) return [];
+  const media = [];
+  for (const [sceneIndex, scene] of scenes.slice(0, 8).entries()) {
+    const query = encodeURIComponent(scene.visualQuery);
+    const [photoResponse, videoResponse] = await Promise.all([
+      fetch(`https://pixabay.com/api/?key=${encodeURIComponent(key)}&q=${query}&image_type=photo&safesearch=true&per_page=2`),
+      fetch(`https://pixabay.com/api/videos/?key=${encodeURIComponent(key)}&q=${query}&safesearch=true&per_page=2`)
+    ]);
+    if (photoResponse.ok) {
+      const data = await photoResponse.json();
+      for (const photo of data.hits || []) media.push({ type: 'photo', provider: 'Pixabay', sceneIndex, id: photo.id, url: photo.pageURL, preview: photo.largeImageURL || photo.webformatURL, creator: photo.user, query: scene.visualQuery, licenseUrl: 'https://pixabay.com/service/license-summary/' });
+    }
+    if (videoResponse.ok) {
+      const data = await videoResponse.json();
+      for (const video of data.hits || []) media.push({ type: 'video', provider: 'Pixabay', sceneIndex, id: video.id, url: video.pageURL, preview: video.videos?.medium?.thumbnail, downloadUrl: video.videos?.medium?.url, creator: video.user, query: scene.visualQuery, licenseUrl: 'https://pixabay.com/service/license-summary/' });
+    }
+  }
+  return media;
+}
+
 async function makePlan(input) {
   const plan = await geminiPlan(input);
-  plan.media = await searchPexels(plan.scenes);
+  plan.media = process.env.PIXABAY_API_KEY ? await searchPixabay(plan.scenes) : await searchPexels(plan.scenes);
   return plan;
 }
 
@@ -162,7 +184,8 @@ const server = http.createServer(async (request, response) => {
   try {
     if (request.method === 'GET' && request.url === '/api/health') return send(response, 200, { ok: true, gemini: Boolean(process.env.GEMINI_API_KEY), media: Boolean(process.env.PEXELS_API_KEY) });
     if (request.method === 'GET' && request.url === '/api/config') return send(response, 200, {
-      gemini: Boolean(process.env.GEMINI_API_KEY), media: Boolean(process.env.PEXELS_API_KEY),
+      gemini: Boolean(process.env.GEMINI_API_KEY), media: Boolean(process.env.PIXABAY_API_KEY || process.env.PEXELS_API_KEY),
+      mediaProvider: process.env.PIXABAY_API_KEY ? 'Pixabay' : process.env.PEXELS_API_KEY ? 'Pexels' : 'Demo fallback',
       youtube: Boolean(process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET),
       models: { plan: process.env.GEMINI_PLAN_MODEL || 'gemini-3.5-flash-lite', review: process.env.GEMINI_REVIEW_MODEL || 'gemini-3.1-pro-preview', tts: process.env.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts' }
     });
