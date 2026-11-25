@@ -5,6 +5,8 @@
 ## Run locally
 
 ```bash
+cp .env.example .env
+# .env খুলে নিজের key বসান, তারপর:
 pnpm dev
 ```
 
