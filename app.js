@@ -28,6 +28,20 @@ document.querySelector('#save-keys').addEventListener('click', async () => {
   finally { button.disabled = false; }
 });
 
+// End of client app.
+document.querySelector('#save-schedule').addEventListener('click', async () => {
+  const note = document.querySelector('#schedule-note');
+  const payload = {
+    daily: document.querySelector('#daily').value,
+    time: document.querySelector('#time').value,
+    autoTopic: document.querySelector('#auto').checked,
+    youtubeQueue: document.querySelector('#youtube').checked
+  };
+  const response = await fetch('/api/schedules', { method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(payload) });
+  const schedule = await response.json();
+  note.textContent = `Saved: ${schedule.daily}টি/দিন · ${schedule.time} · ${schedule.autoTopic ? 'AI topic' : 'নিজের topic'} · ${schedule.youtubeQueue ? 'YouTube queue' : 'draft only'}`;
+});
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   const text = topic.value.trim();
@@ -64,11 +78,5 @@ form.addEventListener('submit', async (event) => {
     button.textContent = 'ভিডিও তৈরি শুরু করুন';
   }
 });
-
-document.querySelector('#save-schedule').addEventListener('click', () => {
-  const count = document.querySelector('#daily').value;
-  const time = document.querySelector('#time').value;
-  const auto = document.querySelector('#auto').checked ? 'AI topic selection on' : 'নিজের topic ব্যবহার হবে';
-  const youtube = document.querySelector('#youtube').checked ? 'YouTube queue on' : 'শুধু draft তৈরি হবে';
-  document.querySelector('#schedule-note').textContent = `${count}টি/দিন · ${time} · ${auto} · ${youtube}`;
-});
+// EOF
+// end

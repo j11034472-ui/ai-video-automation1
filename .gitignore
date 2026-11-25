@@ -6,5 +6,6 @@ dist/
 build/
 renders/
 uploads/
+data/
 *.mp4
 *.mov

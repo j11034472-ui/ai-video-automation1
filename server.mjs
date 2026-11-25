@@ -9,6 +9,9 @@ const port = Number(process.env.PORT || 3000);
 const renderDir = join(root, 'renders');
 const assetDir = join(renderDir, 'assets');
 const envFile = join(root, '.env');
+const dataDir = join(root, 'data');
+const jobsFile = join(dataDir, 'jobs.json');
+const schedulesFile = join(dataDir, 'schedules.json');
 
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json' };
 
@@ -117,6 +120,21 @@ function run(command, args) {
   });
 }
 
+async function readJson(file, fallback) {
+  try { return JSON.parse(await readFile(file, 'utf8')); } catch { return fallback; }
+}
+
+async function writeJson(file, value) {
+  await mkdir(dataDir, { recursive: true });
+  await writeFile(file, JSON.stringify(value, null, 2), { mode: 0o600 });
+}
+
+async function recordJob(job) {
+  const jobs = await readJson(jobsFile, []);
+  jobs.unshift({ ...job, createdAt: new Date().toISOString() });
+  await writeJson(jobsFile, jobs.slice(0, 100));
+}
+
 async function renderPlan(plan) {
   await mkdir(renderDir, { recursive: true });
   await mkdir(assetDir, { recursive: true });
@@ -142,7 +160,7 @@ async function renderPlan(plan) {
   if (process.env.GEMINI_API_KEY && plan.voiceText) audioFile = await generateTts(plan.voiceText, plan.voice);
   if (audioFile) await run('ffmpeg', ['-i', silent, '-i', audioFile, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-shortest', '-movflags', '+faststart', '-y', file]);
   else await run('ffmpeg', ['-i', silent, '-c', 'copy', '-movflags', '+faststart', '-y', file]);
-  return { id, url: `/renders/${id}.mp4`, duration: Math.round(seconds * scenes.length), scenes: scenes.length };
+  return { id, url: `/renders/${id}.mp4`, duration: Math.round(seconds * scenes.length), scenes: scenes.length, audio: Boolean(audioFile) };
 }
 
 async function downloadAsset(url, name) {
@@ -190,6 +208,16 @@ const server = http.createServer(async (request, response) => {
       youtube: Boolean(process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET),
       models: { plan: process.env.GEMINI_PLAN_MODEL || 'gemini-3.5-flash-lite', review: process.env.GEMINI_REVIEW_MODEL || 'gemini-3.1-pro-preview', tts: process.env.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts' }
     });
+    if (request.method === 'GET' && request.url === '/api/jobs') return send(response, 200, await readJson(jobsFile, []));
+    if (request.method === 'GET' && request.url === '/api/schedules') return send(response, 200, await readJson(schedulesFile, []));
+    if (request.method === 'POST' && request.url === '/api/schedules') {
+      const input = await body(request);
+      const schedules = await readJson(schedulesFile, []);
+      const schedule = { id: Date.now().toString(36), daily: Math.max(1, Math.min(20, Number(input.daily || 1))), time: String(input.time || '18:00'), autoTopic: Boolean(input.autoTopic), youtubeQueue: Boolean(input.youtubeQueue), enabled: true, createdAt: new Date().toISOString() };
+      schedules.unshift(schedule);
+      await writeJson(schedulesFile, schedules.slice(0, 20));
+      return send(response, 200, schedule);
+    }
     if (request.method === 'POST' && request.url === '/api/settings') {
       const input = await body(request);
       const allowed = ['GEMINI_API_KEY', 'PIXABAY_API_KEY', 'PEXELS_API_KEY', 'YOUTUBE_CLIENT_ID', 'YOUTUBE_CLIENT_SECRET'];
@@ -200,7 +228,18 @@ const server = http.createServer(async (request, response) => {
       return send(response, 200, { ok: true, configured: { gemini: Boolean(process.env.GEMINI_API_KEY), media: Boolean(process.env.PIXABAY_API_KEY || process.env.PEXELS_API_KEY), youtube: Boolean(process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET) } });
     }
     if (request.method === 'POST' && request.url === '/api/plan') return send(response, 200, await makePlan(await body(request)));
-    if (request.method === 'POST' && request.url === '/api/render') return send(response, 200, await renderPlan(await body(request)));
+    if (request.method === 'POST' && request.url === '/api/render') {
+      const input = await body(request);
+      const started = Date.now();
+      try {
+        const result = await renderPlan(input);
+        await recordJob({ id: result.id, status: 'ready', url: result.url, duration: result.duration, scenes: result.scenes, audio: result.audio, elapsedMs: Date.now() - started });
+        return send(response, 200, result);
+      } catch (error) {
+        await recordJob({ id: `failed-${Date.now()}`, status: 'failed', error: error.message });
+        throw error;
+      }
+    }
     if (request.method === 'POST' && request.url === '/api/tts') {
       const input = await body(request);
       if (!process.env.GEMINI_API_KEY) return send(response, 400, { error: 'GEMINI_API_KEY is not configured' });
