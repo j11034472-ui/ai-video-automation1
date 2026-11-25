@@ -25,7 +25,11 @@ form.addEventListener('submit', async (event) => {
     }) });
     if (!response.ok) throw new Error('API unavailable');
     const plan = await response.json();
-    scenes.innerHTML = plan.scenes.map((scene, index) => `<div class="scene"><b>0${index + 1}</b><span><strong>${scene.title}</strong><br>${scene.narration}<br><small>${scene.visualQuery}</small></span></div>`).join('');
+    scenes.innerHTML = plan.scenes.map((scene, index) => {
+      const media = (plan.media || []).filter((item) => item.sceneIndex === index).slice(0, 2);
+      const mediaText = media.length ? ` · ${media.length}টি ${media.map((item) => item.type).join(' + ')}` : ' · demo visual fallback';
+      return `<div class="scene"><b>0${index + 1}</b><span><strong>${scene.title}</strong><br>${scene.narration}<br><small>${scene.visualQuery}${mediaText}</small></span></div>`;
+    }).join('');
     preview.innerHTML = `<div class="play">✓</div><p>${plan.mode === 'gemini' ? 'AI plan ready' : 'Demo plan ready'} · ${plan.scenes.length} scenes</p>`;
     document.querySelector('#mode-note').textContent = `${plan.mode === 'gemini' ? 'Gemini AI + media search' : 'Demo mode'} · ${plan.media?.length || 0}টি licensed media result পাওয়া গেছে।`;
     const render = await fetch('/api/render', { method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({ ...plan, duration: Number(document.querySelector('#duration').value), voice: document.querySelector('#voice').value, voiceText: plan.scenes.map((scene) => scene.narration).join(' ') }) });

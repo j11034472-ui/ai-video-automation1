@@ -59,11 +59,20 @@ async function searchPexels(scenes) {
   const key = process.env.PEXELS_API_KEY;
   if (!key) return [];
   const media = [];
-  for (const scene of scenes.slice(0, 8)) {
-    const response = await fetch(`https://api.pexels.com/videos/search?query=${encodeURIComponent(scene.visualQuery)}&per_page=2`, { headers: { Authorization: key } });
-    if (!response.ok) continue;
-    const data = await response.json();
-    for (const video of data.videos || []) media.push({ id: video.id, source: 'Pexels', url: video.url, duration: video.duration, creator: video.user?.name, query: scene.visualQuery });
+  for (const [sceneIndex, scene] of scenes.slice(0, 8).entries()) {
+    const query = encodeURIComponent(scene.visualQuery);
+    const [videoResponse, photoResponse] = await Promise.all([
+      fetch(`https://api.pexels.com/videos/search?query=${query}&per_page=2`, { headers: { Authorization: key } }),
+      fetch(`https://api.pexels.com/v1/search?query=${query}&per_page=2`, { headers: { Authorization: key } })
+    ]);
+    if (videoResponse.ok) {
+      const data = await videoResponse.json();
+      for (const video of data.videos || []) media.push({ type: 'video', sceneIndex, id: video.id, source: 'Pexels', url: video.url, preview: video.image, duration: video.duration, creator: video.user?.name, query: scene.visualQuery, licenseUrl: 'https://www.pexels.com/license/' });
+    }
+    if (photoResponse.ok) {
+      const data = await photoResponse.json();
+      for (const photo of data.photos || []) media.push({ type: 'photo', sceneIndex, id: photo.id, source: 'Pexels', url: photo.url, preview: photo.src?.large2x || photo.src?.large, creator: photo.photographer, query: scene.visualQuery, licenseUrl: 'https://www.pexels.com/license/' });
+    }
   }
   return media;
 }
