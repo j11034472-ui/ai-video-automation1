@@ -14,9 +14,14 @@ Optional `.env` values (never commit this file):
 
 ```bash
 GEMINI_API_KEY=...
-GEMINI_MODEL=gemini-2.0-flash
+GEMINI_PLAN_MODEL=gemini-3.5-flash-lite
+GEMINI_REVIEW_MODEL=gemini-3.1-pro-preview
+GEMINI_REVIEW=false
+GEMINI_TTS_MODEL=gemini-3.8-flash-tts
 PEXELS_API_KEY=...
 ```
+
+Model roles: Flash-Lite plans quickly and Pro reviews the result. TTS is configured separately so voice generation can be swapped without changing the planner.
 
 ## Planned modules
 

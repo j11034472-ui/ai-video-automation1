@@ -27,7 +27,7 @@ function demoPlan(input) {
 async function geminiPlan(input) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return demoPlan(input);
-  const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const model = process.env.GEMINI_PLAN_MODEL || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
   const prompt = `Create a concise video plan in ${input.language || 'English'} for: ${input.topic}. Duration: ${input.duration || 20} seconds. Return JSON only with scenes, each containing title, narration, and visualQuery. Use 3 to 8 scenes and keep narration suitable for the requested duration.`;
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
@@ -36,7 +36,23 @@ async function geminiPlan(input) {
   const data = await response.json();
   const raw = data.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('') || '';
   const json = JSON.parse(raw.replace(/^```json\s*/i, '').replace(/\s*```$/, ''));
-  return { mode: 'gemini', scenes: Array.isArray(json.scenes) ? json.scenes : demoPlan(input).scenes, media: [] };
+  const scenes = Array.isArray(json.scenes) ? json.scenes : demoPlan(input).scenes;
+  return { mode: 'gemini', model, scenes, media: [], review: await reviewPlan(input, scenes) };
+}
+
+async function reviewPlan(input, scenes) {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key || process.env.GEMINI_REVIEW !== 'true') return { enabled: false, passed: true };
+  const model = process.env.GEMINI_REVIEW_MODEL || 'gemini-3.1-pro-preview';
+  const prompt = `Review this ${input.language || 'English'} video plan for factual clarity, repetition, unsafe claims, and whether each visualQuery matches its narration. Return JSON only: {"passed":true|false,"notes":"short note","fixes":["..."]}. Plan: ${JSON.stringify(scenes)}`;
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+  });
+  if (!response.ok) return { enabled: true, passed: true, skipped: true, model };
+  const data = await response.json();
+  const raw = data.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('') || '{}';
+  try { return { enabled: true, model, ...JSON.parse(raw.replace(/^```json\s*/i, '').replace(/\s*```$/, '')) }; }
+  catch { return { enabled: true, model, passed: true, skipped: true }; }
 }
 
 async function searchPexels(scenes) {
