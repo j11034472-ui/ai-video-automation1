@@ -23,6 +23,11 @@ form.addEventListener('submit', async (event) => {
     scenes.innerHTML = plan.scenes.map((scene, index) => `<div class="scene"><b>0${index + 1}</b><span><strong>${scene.title}</strong><br>${scene.narration}<br><small>${scene.visualQuery}</small></span></div>`).join('');
     preview.innerHTML = `<div class="play">✓</div><p>${plan.mode === 'gemini' ? 'AI plan ready' : 'Demo plan ready'} · ${plan.scenes.length} scenes</p>`;
     document.querySelector('#mode-note').textContent = `${plan.mode === 'gemini' ? 'Gemini AI + media search' : 'Demo mode'} · ${plan.media?.length || 0}টি licensed media result পাওয়া গেছে।`;
+    const render = await fetch('/api/render', { method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({ ...plan, duration: Number(document.querySelector('#duration').value) }) });
+    if (render.ok) {
+      const result = await render.json();
+      preview.innerHTML = `<video controls playsinline src="${result.url}"></video><p>${result.duration}s test render ready</p>`;
+    }
   } catch (error) {
     preview.innerHTML = '<div class="play">!</div><p>Server চালু করুন: pnpm dev</p>';
   } finally {

@@ -1,10 +1,12 @@
 import http from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const port = Number(process.env.PORT || 3000);
+const renderDir = join(root, 'renders');
 
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json' };
 
@@ -56,6 +58,30 @@ async function makePlan(input) {
   return plan;
 }
 
+function run(command, args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+    let error = '';
+    child.stderr.on('data', (chunk) => { error += chunk.toString(); });
+    child.on('error', reject);
+    child.on('close', (code) => code === 0 ? resolve() : reject(new Error(error.slice(-1200) || `ffmpeg exited ${code}`)));
+  });
+}
+
+async function renderPlan(plan) {
+  await mkdir(renderDir, { recursive: true });
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const file = join(renderDir, `${id}.mp4`);
+  const scenes = (plan.scenes || []).slice(0, 12);
+  const seconds = Math.max(2, Math.min(30, Number(plan.duration || 20) / Math.max(1, scenes.length)));
+  const colors = ['#102a43', '#243b53', '#334e68', '#486581', '#0b525b', '#144552', '#1b3a4b', '#212f45'];
+  const inputs = scenes.map((_, i) => ['-f', 'lavfi', '-i', `color=c=${colors[i % colors.length]}:s=720x1280:r=30:d=${seconds}`]).flat();
+  const filters = scenes.map((_, i) => `[${i}:v]drawtext=fontcolor=white:fontsize=42:x=(w-text_w)/2:y=(h-text_h)/2:text='SCENE ${i + 1}',format=yuv420p[v${i}]`).join(';');
+  const concat = scenes.map((_, i) => `[v${i}]`).join('') + `concat=n=${scenes.length}:v=1:a=0[outv]`;
+  await run('ffmpeg', [...inputs, '-filter_complex', `${filters};${concat}`, '-map', '[outv]', '-movflags', '+faststart', '-y', file]);
+  return { id, url: `/renders/${id}.mp4`, duration: Math.round(seconds * scenes.length), scenes: scenes.length };
+}
+
 async function body(request) {
   let value = '';
   for await (const chunk of request) value += chunk;
@@ -66,6 +92,7 @@ const server = http.createServer(async (request, response) => {
   try {
     if (request.method === 'GET' && request.url === '/api/health') return send(response, 200, { ok: true, gemini: Boolean(process.env.GEMINI_API_KEY), media: Boolean(process.env.PEXELS_API_KEY) });
     if (request.method === 'POST' && request.url === '/api/plan') return send(response, 200, await makePlan(await body(request)));
+    if (request.method === 'POST' && request.url === '/api/render') return send(response, 200, await renderPlan(await body(request)));
     if (request.method !== 'GET') return send(response, 405, { error: 'Method not allowed' });
     const requested = request.url === '/' ? '/index.html' : request.url.split('?')[0];
     const file = normalize(join(root, requested));
