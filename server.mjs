@@ -1,5 +1,5 @@
 import http from 'node:http';
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -94,8 +94,30 @@ async function renderPlan(plan) {
   const inputs = scenes.map((_, i) => ['-f', 'lavfi', '-i', `color=c=${colors[i % colors.length]}:s=720x1280:r=30:d=${seconds}`]).flat();
   const filters = scenes.map((_, i) => `[${i}:v]drawtext=fontcolor=white:fontsize=42:x=(w-text_w)/2:y=(h-text_h)/2:text='SCENE ${i + 1}',format=yuv420p[v${i}]`).join(';');
   const concat = scenes.map((_, i) => `[v${i}]`).join('') + `concat=n=${scenes.length}:v=1:a=0[outv]`;
-  await run('ffmpeg', [...inputs, '-filter_complex', `${filters};${concat}`, '-map', '[outv]', '-movflags', '+faststart', '-y', file]);
+  const silent = join(renderDir, `${id}-silent.mp4`);
+  await run('ffmpeg', [...inputs, '-filter_complex', `${filters};${concat}`, '-map', '[outv]', '-movflags', '+faststart', '-y', silent]);
+  let audioFile;
+  if (process.env.GEMINI_API_KEY && plan.voiceText) audioFile = await generateTts(plan.voiceText, plan.voice);
+  if (audioFile) await run('ffmpeg', ['-i', silent, '-i', audioFile, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-shortest', '-movflags', '+faststart', '-y', file]);
+  else await run('ffmpeg', ['-i', silent, '-c', 'copy', '-movflags', '+faststart', '-y', file]);
   return { id, url: `/renders/${id}.mp4`, duration: Math.round(seconds * scenes.length), scenes: scenes.length };
+}
+
+async function generateTts(text, selectedVoice) {
+  const voice = selectedVoice?.includes('Warm') ? 'Aoede' : selectedVoice?.includes('English') ? 'Puck' : 'Kore';
+  const model = process.env.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts';
+  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
+    body: JSON.stringify({ model, input: [{ type: 'user_input', content: [{ type: 'text', text, annotations: [{ type: 'speech_metadata', style: 'clear, warm and engaging' }] }] }], response_format: { type: 'audio' }, generation_config: { speech_config: [{ voice }] } })
+  });
+  if (!response.ok) throw new Error(`TTS returned ${response.status}`);
+  const data = await response.json();
+  const audioData = data.output_audio?.data || data.steps?.flatMap((step) => step.content || []).reverse().find((part) => part.type === 'audio')?.data;
+  if (!audioData) throw new Error('TTS returned no audio');
+  const file = join(renderDir, `tts-${Date.now()}.wav`);
+  await writeFile(file, Buffer.from(audioData, 'base64'));
+  return file;
 }
 
 async function body(request) {
@@ -109,6 +131,12 @@ const server = http.createServer(async (request, response) => {
     if (request.method === 'GET' && request.url === '/api/health') return send(response, 200, { ok: true, gemini: Boolean(process.env.GEMINI_API_KEY), media: Boolean(process.env.PEXELS_API_KEY) });
     if (request.method === 'POST' && request.url === '/api/plan') return send(response, 200, await makePlan(await body(request)));
     if (request.method === 'POST' && request.url === '/api/render') return send(response, 200, await renderPlan(await body(request)));
+    if (request.method === 'POST' && request.url === '/api/tts') {
+      const input = await body(request);
+      if (!process.env.GEMINI_API_KEY) return send(response, 400, { error: 'GEMINI_API_KEY is not configured' });
+      const file = await generateTts(String(input.text || ''), input.voice);
+      return send(response, 200, { url: `/${file.slice(root.length).replaceAll('\\', '/')}` });
+    }
     if (request.method !== 'GET') return send(response, 405, { error: 'Method not allowed' });
     const requested = request.url === '/' ? '/index.html' : request.url.split('?')[0];
     const file = normalize(join(root, requested));

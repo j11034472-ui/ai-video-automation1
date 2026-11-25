@@ -21,7 +21,7 @@ GEMINI_TTS_MODEL=gemini-3.8-flash-tts
 PEXELS_API_KEY=...
 ```
 
-Model roles: Flash-Lite plans quickly and Pro reviews the result. TTS is configured separately so voice generation can be swapped without changing the planner.
+Model roles: Flash-Lite plans quickly and Pro reviews the result. Gemini 3.8 Flash TTS generates an optional WAV voice track, which FFmpeg can mux into the MP4. See the [official TTS guide](https://ai.google.dev/gemini-api/docs/speech-generation).
 
 ## Planned modules
 
