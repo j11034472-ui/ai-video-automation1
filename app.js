@@ -3,18 +3,32 @@ const topic = document.querySelector('#topic');
 const scenes = document.querySelector('#scene-list');
 const preview = document.querySelector('#preview');
 
-form.addEventListener('submit', (event) => {
+form.addEventListener('submit', async (event) => {
   event.preventDefault();
   const text = topic.value.trim();
   if (!text) return;
-  const parts = [
-    `Hook: ${text}`,
-    `মূল বিষয় ব্যাখ্যা: ${text}`,
-    'উদাহরণ ও matching licensed visual',
-    'সংক্ষিপ্ত উপসংহার ও call to action'
-  ];
-  scenes.innerHTML = parts.map((part, index) => `<div class="scene"><b>0${index + 1}</b><span>${part}</span></div>`).join('');
-  preview.innerHTML = '<div class="play">✓</div><p>Scene plan ready — render worker যুক্ত হলে ভিডিও তৈরি হবে</p>';
+  const button = form.querySelector('button[type="submit"]');
+  button.disabled = true;
+  button.textContent = 'Plan তৈরি হচ্ছে…';
+  try {
+    const response = await fetch('/api/plan', { method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({
+      topic: text,
+      language: document.querySelector('#language').value,
+      duration: Number(document.querySelector('#duration').value),
+      format: document.querySelector('#format').value,
+      voice: document.querySelector('#voice').value
+    }) });
+    if (!response.ok) throw new Error('API unavailable');
+    const plan = await response.json();
+    scenes.innerHTML = plan.scenes.map((scene, index) => `<div class="scene"><b>0${index + 1}</b><span><strong>${scene.title}</strong><br>${scene.narration}<br><small>${scene.visualQuery}</small></span></div>`).join('');
+    preview.innerHTML = `<div class="play">✓</div><p>${plan.mode === 'gemini' ? 'AI plan ready' : 'Demo plan ready'} · ${plan.scenes.length} scenes</p>`;
+    document.querySelector('#mode-note').textContent = `${plan.mode === 'gemini' ? 'Gemini AI + media search' : 'Demo mode'} · ${plan.media?.length || 0}টি licensed media result পাওয়া গেছে।`;
+  } catch (error) {
+    preview.innerHTML = '<div class="play">!</div><p>Server চালু করুন: pnpm dev</p>';
+  } finally {
+    button.disabled = false;
+    button.textContent = 'ভিডিও তৈরি শুরু করুন';
+  }
 });
 
 document.querySelector('#save-schedule').addEventListener('click', () => {

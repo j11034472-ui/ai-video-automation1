@@ -1,6 +1,22 @@
 # AI Video Automation
 
-বাংলা-first AI video automation-এর MVP scaffold। এখন এটি frontend prototype: topic থেকে scene plan ও automation settings দেখায়।
+বাংলা-first AI video automation-এর MVP scaffold। Topic থেকে scene plan তৈরি করে এবং optional Gemini/Pexels integration ব্যবহার করে।
+
+## Run locally
+
+```bash
+pnpm dev
+```
+
+Then open `http://localhost:3000`.
+
+Optional `.env` values (never commit this file):
+
+```bash
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.0-flash
+PEXELS_API_KEY=...
+```
 
 ## Planned modules
 
